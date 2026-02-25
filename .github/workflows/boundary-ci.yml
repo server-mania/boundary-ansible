@@ -52,4 +52,4 @@ jobs:
             -format json | jq -r '.item.attributes.token')
           
           cd proxmox
-          ansible-playbook -i hosts.ini update_pve.yml -e "ansible_become_password=$SUDO_PASSWORD"
+          ansible-playbook -i hosts.ini update_pve.yml
