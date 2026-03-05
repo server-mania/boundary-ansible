@@ -21,12 +21,23 @@ jobs:
         with:
           addr: ${{ secrets.BOUNDARY_ADDR }}
 
+      - name: Network Check (Direct Cloudflare Access test)
+        run: |
+          curl -s -w "%{http_code}" \
+            -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
+            -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" \
+            ${{ secrets.VAULT_ADDR }}/v1/sys/health
+
+
       - name: Import Secrets from Vault
         uses: hashicorp/vault-action@v3
         with:
           url: ${{ secrets.VAULT_ADDR }}
           role: github-actions-role
           method: jwt
+          extraHeaders: |
+            CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+            CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           secrets: |
             secret/data/boundary/ci-credentials login_name | BOUNDARY_USER ;
             secret/data/boundary/ci-credentials password | BOUNDARY_PASSWORD ;
