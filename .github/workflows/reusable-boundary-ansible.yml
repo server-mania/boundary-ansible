@@ -59,7 +59,7 @@ jobs:
       - name: install ansible Extensions
         run: |
          pipx inject ansible-core hvac
-         ansible-galaxy collection install community.hashi_vault
+         ansible-galaxy collection install community.hashi_vault --force
 
       - name: authenticate boundary
         env:
