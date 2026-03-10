@@ -27,6 +27,7 @@ jobs:
         with:
           addr: ${{ secrets.BOUNDARY_ADDR }}
 
+      #cloudflare accessの認証が通っているかを確認
       - name: Network Check
         run: |
           curl -s -w "%{http_code}" \
@@ -44,6 +45,7 @@ jobs:
           extraHeaders: |
             CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
             CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          # boundaryの認証用の情報を取得（本当はOIDC使いたいけどCI環境では未対応・・・）
           secrets: |
             secret/data/boundary/ci-credentials login_name | BOUNDARY_USER ;
             secret/data/boundary/ci-credentials password | BOUNDARY_PASSWORD ;
@@ -55,7 +57,7 @@ jobs:
           mkdir -p ~/.ssh
           cp sshSettings/config ~/.ssh/ && chmod 600 ~/.ssh/config
           echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-
+      
       - name: install ansible Extensions
         run: |
          pipx inject ansible-core hvac
