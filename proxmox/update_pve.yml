@@ -3,10 +3,22 @@
 ---
 - name: Proxmox VE ホストのアップデートとアップグレード
   hosts: proxmox
-  become: yes 
-  vars:
-    ansible_become_password: "{{ (lookup('community.hashi_vault.hashi_vault', 'ad/creds/ldapci-role'))['current_password'] }}"
   tasks:
+    - name: Vaultから認証情報を取得 (Module版)
+      community.hashi_vault.vault_read:
+        path: "ad/creds/ldapci-role"
+        url: "{{ vault_addr }}"
+        token: "{{ v_token }}"
+        validate_certs: false
+      register: vault_secret
+
+    - name: パスワードを become 用変数にセット
+      ansible.builtin.set_fact:
+        ansible_become_password: "{{ vault_secret.data.data.current_password }}"
+      delegate_to: localhost
+      run_once: true
+      no_log: true
+
     - name: aptキャッシュの更新と dist-upgrade の実行
       ansible.builtin.apt:
         update_cache: yes
@@ -15,6 +27,7 @@
         autoremove: yes
         # キャッシュの有効期限を秒で指定（1時間以内に実行されていればupdateをスキップ）
         cache_valid_time: 3600
+      become: true
 
     - name: 再起動が必要かどうかを確認する
       ansible.builtin.stat:
