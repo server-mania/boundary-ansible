@@ -10,8 +10,9 @@
   tasks:
     - name: Vaultから認証情報を取得 (Module版)
       #cloudflare access のトークン認証を使う方法が分からなかったため、
-      #仕方なくターゲットサーバ上で認証してパスワードを取得
+      #仕方なくターゲットサーバ上で認証してパスワードを取得。
       #ターゲットサーバへはboundary経由でトンネリングで接続する
+      #パスワードはランダムなものが30分ごとに更新されるため動的に取得する。
       community.hashi_vault.vault_read:
         path: "ad/creds/ldapci-role"
         url: "{{ vault_addr }}"
@@ -19,7 +20,7 @@
         validate_certs: false
       register: vault_secret
 
-    - name: パスワードを become 用変数にセット
+    - name: パスワードを become 用変数にセット（sudo昇格用）
       ansible.builtin.set_fact:
         ansible_become_password: "{{ vault_secret.data.data.current_password }}"
       delegate_to: localhost
