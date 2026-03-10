@@ -3,6 +3,11 @@
 ---
 - name: Proxmox VE ホストのアップデートとアップグレード
   hosts: proxmox
+  
+  vars:
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') }}"
+    v_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+    
   tasks:
     - name: Vaultから認証情報を取得 (Module版)
       community.hashi_vault.vault_read:
