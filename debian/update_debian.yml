@@ -9,6 +9,9 @@
 
   tasks:
     - name: Vaultから認証情報を取得 (Module版)
+      #cloudflare access のトークン認証を使う方法が分からなかったため、
+      #仕方なくターゲットサーバ上で認証してパスワードを取得
+      #ターゲットサーバへはboundary経由でトンネリングで接続する
       community.hashi_vault.vault_read:
         path: "ad/creds/ldapci-role"
         url: "{{ vault_addr }}"
