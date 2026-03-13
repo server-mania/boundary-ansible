@@ -57,6 +57,7 @@ jobs:
           mkdir -p ~/.ssh
           cp sshSettings/config ~/.ssh/ && chmod 600 ~/.ssh/config
           echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cp ansibleConfig/ansible.cfg ~/.ansible.cfg
       
       - name: install ansible Extensions
         run: |
