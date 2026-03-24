@@ -3,6 +3,7 @@
 ---
 - name: Proxmox VE ホストのアップデートとアップグレード
   hosts: proxmox
+  gather_facts: false
   
   vars:
     vault_addr: "{{ lookup('env', 'VAULT_ADDR') }}"
@@ -10,18 +11,19 @@
     
   tasks:
     - name: Vaultから認証情報を取得 (Module版)
+    #このパスワードは30mごとにvault側で自動でローテーションされる
       community.hashi_vault.vault_read:
         path: "ad/creds/ldapci-role"
         url: "{{ vault_addr }}"
         token: "{{ v_token }}"
-        validate_certs: false
+        validate_certs: true
       register: vault_secret
-
-    - name: パスワードを become 用変数にセット
-      ansible.builtin.set_fact:
-        ansible_become_password: "{{ vault_secret.data.data.current_password }}"
       delegate_to: localhost
-      run_once: true
+
+    - name: SSHパスワードとsudoパスワードをset
+      ansible.builtin.set_fact:
+        ansible_password: "{{ vault_secret.data.data.current_password }}"
+        ansible_become_password: "{{ vault_secret.data.data.current_password }}"
       no_log: true
 
     - name: aptキャッシュの更新と dist-upgrade の実行
