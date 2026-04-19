@@ -1,0 +1,64 @@
+name: ansible cloudflared
+
+on:
+  workflow_call:
+    inputs:
+      ansible_dir:
+        required: true
+        type: string
+        description: "ansibleを実行するディレクトリ "
+      ansible_command:
+        required: true
+        type: string
+        description: "実行するansibleコマンド"
+
+jobs:
+  boundary-job:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Import Secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          role: github-actions-role
+          method: jwt
+          exportToken: true
+          extraHeaders: |
+            CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+            CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          secrets: |
+            secret/data/boundary/ci-credentials known_hosts | SSH_KNOWN_HOSTS ;
+
+      - name: Copy Ansible Config
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cp ansibleConfig/ansible.cfg ~/.ansible.cfg
+          
+      - name: install cloudflared
+        run: |
+         curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
+         -o /usr/local/bin/cloudflared
+         chmod +x /usr/local/bin/cloudflared
+
+      - name: run ansible
+        env:
+          ANSIBLE_SSH_COMMON_ARGS: >-
+            -o ProxyCommand="/usr/local/bin/cloudflared access ssh --hostname %h 
+            --service-token-id ${{ secrets.CF_ACCESS_CLIENT_ID }} 
+            --service-token-secret ${{ secrets.CF_ACCESS_CLIENT_SECRET }}"
+          
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_TOKEN: ${{ env.VAULT_TOKEN }} 
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          
+        run: |
+          cd ${{ inputs.ansible_dir }}
+          ${{ inputs.ansible_command }}
